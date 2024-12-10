@@ -9,118 +9,98 @@ GPIO_DIRECTION_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/direction"
 GPIO_VALUE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/value"
 GPIO_BASE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}"
 
-# 음계에 해당하는 주파수
-FREQUENCIES = {
-    'C': 261.63,  
-    'D': 293.66,  
-    'E': 329.63,  
-    'F': 349.23,  
-    'G': 392.00,  
-    'A': 440.00,  
-    'B': 493.88  
+# 버튼 GPIO 핀 설정
+BUTTON_GPIO_MAP = {
+    83: 'C',
+    84: 'D',
+    85: 'E',
+    86: 'F',
+    87: 'G',
+    88: 'A',
+    89: 'B',
+    90: 'C5'
 }
 
-# 버튼과 GPIO 핀 번호 매핑
-BUTTON_PINS = {
-    'C': 81,  # 핀 번호 3
-    'D': 82,  # 핀 번호 5
-    'E': 83,  # 핀 번호 7
-    'F': 84,  # 핀 번호 11
-    'G': 65,  # 핀 번호 18
-    'A': 86,  # 핀 번호 15
-    'B': 90   # 핀 번호 16
+# 각 음의 주파수
+FREQ_VALUES = {
+    'C': 261.63,
+    'D': 293.66,
+    'E': 329.63,
+    'F': 349.23,
+    'G': 392.00,
+    'A': 440.00,
+    'B': 493.88,
+    'C5': 523.25
 }
 
-# 버저 핀
-BUZZER_PIN = 89  # 핀 번호 12
+# 부저 GPIO 핀
+BUZZER_GPIO = 91  # 예: GPIO 91번에 연결
 
-# GPIO 초기화
+# GPIO 경로 유틸리티 함수
 def is_gpio_exported(gpio_number):
-    gpio_base_path = GPIO_BASE_PATH_TEMPLATE.format(gpio_number)
-    return os.path.exists(gpio_base_path)
+    return os.path.exists(GPIO_BASE_PATH_TEMPLATE.format(gpio_number))
 
 def export_gpio(gpio_number):
     if not is_gpio_exported(gpio_number):
-        try:
-            with open(GPIO_EXPORT_PATH, 'w') as export_file:
-                export_file.write(str(gpio_number))
-        except IOError as e:
-            print(f"Error exporting GPIO {gpio_number}: {e}")
-            sys.exit(1)
+        with open(GPIO_EXPORT_PATH, 'w') as export_file:
+            export_file.write(str(gpio_number))
 
 def unexport_gpio(gpio_number):
-    try:
-        with open(GPIO_UNEXPORT_PATH, 'w') as unexport_file:
-            unexport_file.write(str(gpio_number))
-    except IOError as e:
-        print(f"Error unexporting GPIO {gpio_number}: {e}")
-        sys.exit(1)
+    with open(GPIO_UNEXPORT_PATH, 'w') as unexport_file:
+        unexport_file.write(str(gpio_number))
 
 def set_gpio_direction(gpio_number, direction):
-    gpio_direction_path = GPIO_DIRECTION_PATH_TEMPLATE.format(gpio_number)
-    try:
-        with open(gpio_direction_path, 'w') as direction_file:
-            direction_file.write(direction)
-    except IOError as e:
-        print(f"Error setting GPIO {gpio_number} direction to {direction}: {e}")
-        sys.exit(1)
+    with open(GPIO_DIRECTION_PATH_TEMPLATE.format(gpio_number), 'w') as direction_file:
+        direction_file.write(direction)
 
 def set_gpio_value(gpio_number, value):
-    gpio_value_path = GPIO_VALUE_PATH_TEMPLATE.format(gpio_number)
-    try:
-        with open(gpio_value_path, 'w') as value_file:
-            value_file.write(str(value))
-    except IOError as e:
-        print(f"Error setting GPIO {gpio_number} value to {value}: {e}")
-        sys.exit(1)
+    with open(GPIO_VALUE_PATH_TEMPLATE.format(gpio_number), 'w') as value_file:
+        value_file.write(str(value))
 
-def read_gpio_value(gpio_number):
-    gpio_value_path = GPIO_VALUE_PATH_TEMPLATE.format(gpio_number)
-    try:
-        with open(gpio_value_path, 'r') as value_file:
-            return int(value_file.read().strip())
-    except IOError as e:
-        print(f"Error reading GPIO {gpio_number} value: {e}")
-        sys.exit(1)
+def get_gpio_value(gpio_number):
+    with open(GPIO_VALUE_PATH_TEMPLATE.format(gpio_number), 'r') as value_file:
+        return value_file.read().strip()
 
+# 음 재생 함수
 def play_tone(gpio_number, frequency, duration):
     period = 1.0 / frequency
     half_period = period / 2
     end_time = time.time() + duration
-
     while time.time() < end_time:
         set_gpio_value(gpio_number, 1)
         time.sleep(half_period)
         set_gpio_value(gpio_number, 0)
         time.sleep(half_period)
 
+# 메인 코드
 if __name__ == "__main__":
     try:
-        # GPIO 초기화
-        export_gpio(BUZZER_PIN)
-        set_gpio_direction(BUZZER_PIN, "out")
+        # GPIO 설정
+        for gpio in BUTTON_GPIO_MAP.keys():
+            export_gpio(gpio)
+            set_gpio_direction(gpio, 'in')
 
-        for pin in BUTTON_PINS.values():
-            export_gpio(pin)
-            set_gpio_direction(pin, "in")
+        export_gpio(BUZZER_GPIO)
+        set_gpio_direction(BUZZER_GPIO, 'out')
 
-        print("Press a button to play a tone!")
+        print("Ready to play notes. Press buttons!")
 
         while True:
-            for note, pin in BUTTON_PINS.items():
-                if read_gpio_value(pin) == 0:  # 버튼 눌림 감지
-                    print(f"Playing {note} ({FREQUENCIES[note]} Hz)")
-                    play_tone(BUZZER_PIN, FREQUENCIES[note], 0.5)
-                    time.sleep(0.1)  # 버튼 debounce 방지
+            for gpio, note in BUTTON_GPIO_MAP.items():
+                if get_gpio_value(gpio) == '1':  # 버튼이 눌렸는지 확인
+                    print(f"Playing {note}")
+                    play_tone(BUZZER_GPIO, FREQ_VALUES[note], 0.5)
+
+                    # 버튼이 떼어질 때까지 대기
+                    while get_gpio_value(gpio) == '1':
+                        pass
+
+            time.sleep(0.1)  # 입력 안정화를 위한 대기
 
     except KeyboardInterrupt:
-        print("\nOperation stopped by User")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        print("종료합니다.")
     finally:
-        # GPIO 해제
-        unexport_gpio(BUZZER_PIN)
-        for pin in BUTTON_PINS.values():
-            unexport_gpio(pin)
-
-    sys.exit(0)
+        # 모든 GPIO 핀 정리
+        for gpio in BUTTON_GPIO_MAP.keys():
+            unexport_gpio(gpio)
+        unexport_gpio(BUZZER_GPIO)
