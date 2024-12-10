@@ -14,7 +14,7 @@ FREQUENCIES = {
     'E': 329.63,  
     'F': 349.23,  
     'G': 392.00,  
-    'A': 0,  
+    'A': 440.00,  
     'B': 493.88,  
     'C5': 523.25  
 }
@@ -99,12 +99,20 @@ if __name__ == "__main__":
         set_gpio_direction(gpio_pin, "out")
 
         button_input = None
+        last_button_input = None  # 마지막 버튼 입력 상태 저장
+        debounce_time = 0.2  # 디바운싱 시간 (0.2초)
+        
         while True:
             button_input = get_button_input()
-            if button_input:  # 버튼이 눌린 경우에만
+            if button_input and button_input != last_button_input:  # 버튼이 눌렸고, 마지막 입력과 다른 경우
                 print(f"{button_input} 버튼이 눌렸습니다.")
                 play_tone(gpio_pin, FREQUENCIES[button_input], 0.5)
-                time.sleep(0.2)  # 버튼 눌림 인식 후 잠시 대기
+                last_button_input = button_input  # 마지막 입력 상태 업데이트
+                time.sleep(debounce_time)  # 디바운싱 처리
+
+            if not button_input and last_button_input:  # 버튼이 떼어진 경우
+                last_button_input = None  # 버튼 상태 초기화
+                time.sleep(debounce_time)  # 디바운싱 처리
 
     except KeyboardInterrupt:
         print("\nOperation stopped by User")
