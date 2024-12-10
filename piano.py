@@ -1,15 +1,13 @@
-import sys
 import os
 import time
 
-# GPIO 경로 설정
+# GPIO 설정 경로
 GPIO_EXPORT_PATH = "/sys/class/gpio/export"
 GPIO_UNEXPORT_PATH = "/sys/class/gpio/unexport"
 GPIO_DIRECTION_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/direction"
 GPIO_VALUE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/value"
-GPIO_BASE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}"
 
-# 버튼 GPIO 핀 설정
+# 버튼과 음 대응 설정
 BUTTON_GPIO_MAP = {
     83: 'C',
     84: 'D',
@@ -21,7 +19,6 @@ BUTTON_GPIO_MAP = {
     90: 'C5'
 }
 
-# 각 음의 주파수
 FREQ_VALUES = {
     'C': 261.63,
     'D': 293.66,
@@ -34,11 +31,11 @@ FREQ_VALUES = {
 }
 
 # 부저 GPIO 핀
-BUZZER_GPIO = 91  # 예: GPIO 91번에 연결
+BUZZER_GPIO = 91
 
 # GPIO 유틸리티 함수
 def export_gpio(gpio_number):
-    if not os.path.exists(GPIO_BASE_PATH_TEMPLATE.format(gpio_number)):
+    if not os.path.exists(f"/sys/class/gpio/gpio{gpio_number}"):
         with open(GPIO_EXPORT_PATH, 'w') as export_file:
             export_file.write(str(gpio_number))
 
@@ -68,7 +65,7 @@ def play_tone(gpio_number, frequency, duration):
 # 메인 코드
 if __name__ == "__main__":
     try:
-        # GPIO 설정
+        # GPIO 초기화
         for gpio in BUTTON_GPIO_MAP.keys():
             export_gpio(gpio)
             set_gpio_direction(gpio, 'in')
@@ -76,25 +73,26 @@ if __name__ == "__main__":
         export_gpio(BUZZER_GPIO)
         set_gpio_direction(BUZZER_GPIO, 'out')
 
-        print("Ready to play notes. Press buttons!")
+        print("버튼을 누르면 음이 재생됩니다.")
 
         while True:
             for gpio, note in BUTTON_GPIO_MAP.items():
-                gpio_value = get_gpio_value(gpio)  # GPIO 상태 읽기
-                if gpio_value == '1':  # 버튼이 눌렸다면
+                gpio_value = get_gpio_value(gpio)
+                print(f"GPIO {gpio}: {gpio_value}")  # 현재 상태 출력
+                if gpio_value == '1':  # 버튼이 눌린 경우
                     print(f"Button pressed: {note}")
                     play_tone(BUZZER_GPIO, FREQ_VALUES[note], 0.5)
 
                     # 버튼 해제 대기
                     while get_gpio_value(gpio) == '1':
-                        pass  # 버튼이 눌린 상태를 벗어날 때까지 대기
+                        pass  # 버튼 해제 대기
 
-            time.sleep(0.1)  # 입력 안정화를 위한 대기
+            time.sleep(0.1)  # 루프 안정화
 
     except KeyboardInterrupt:
-        print("종료합니다.")
+        print("프로그램 종료 중...")
     finally:
-        # 모든 GPIO 핀 정리
+        # GPIO 정리
         for gpio in BUTTON_GPIO_MAP.keys():
             with open(GPIO_UNEXPORT_PATH, 'w') as unexport_file:
                 unexport_file.write(str(gpio))
