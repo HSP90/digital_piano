@@ -11,12 +11,7 @@ GPIO_BASE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}"
 FREQUENCIES = {
     'C': 261.63,  
     'D': 293.66,  
-    'E': 329.63,  
-    'F': 349.23,  
-    'G': 392.00,  
-    'A': 440.00,  
-    'B': 493.88,  
-    'C5': 523.25  
+    'E': 329.63  
 }
 
 def is_gpio_exported(gpio_number):
@@ -70,14 +65,11 @@ def play_tone(gpio_number, frequency, duration):
         time.sleep(half_period)
 
 def get_button_input():
+    # C, D, E 버튼만 체크
     button_pins = {
         'C': 83,  # GPIO 83
         'D': 84,  # GPIO 84
         'E': 85,  # GPIO 85
-        'F': 86,  # GPIO 86
-        'G': 87,  # GPIO 87
-        'A': 88,  # GPIO 88
-        'B': 89,  # GPIO 89
     }
     for note, pin in button_pins.items():
         gpio_value_path = GPIO_VALUE_PATH_TEMPLATE.format(pin)
