@@ -84,12 +84,12 @@ def get_button_input():
         try:
             with open(gpio_value_path, 'r') as value_file:
                 value = value_file.read().strip()
-                if value == '1':
+                if value == '1':  # 버튼이 눌렸을 때
                     return note
         except IOError as e:
             print(f"Error reading GPIO {pin} value: {e}")
             sys.exit(1)
-    return None
+    return None  # 버튼이 눌리지 않으면 None을 반환
 
 if __name__ == "__main__":
     gpio_pin = 90  # 버저가 연결된 핀 번호 (GPIO 90)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         button_input = None
         while True:
             button_input = get_button_input()
-            if button_input:
+            if button_input:  # 버튼이 눌린 경우에만
                 print(f"{button_input} 버튼이 눌렸습니다.")
                 play_tone(gpio_pin, FREQUENCIES[button_input], 0.5)
                 time.sleep(0.2)  # 버튼 눌림 인식 후 잠시 대기
