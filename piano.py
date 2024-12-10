@@ -34,7 +34,7 @@ FREQ_VALUES = {
 }
 
 # 부저 GPIO 핀
-BUZZER_GPIO = 91  # 예: GPIO 91번에 연결
+BUZZER_GPIO = 90  # 예: GPIO 90번에 연결
 
 # GPIO 경로 유틸리티 함수
 def is_gpio_exported(gpio_number):
